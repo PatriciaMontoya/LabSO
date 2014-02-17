@@ -66,12 +66,13 @@ void transferencia()
 int contador = 0;
 int aCuenta1;
 int aCuenta2;
-
+int semilla = 2;
+//se controla que cada hilo haga la cantidad de tranferencias indicada por el usuario.
 	while(contador!=tRecorrer)
 	{
 		int bandera=0;
 		int bandera2=0;
-		int semilla = 2;
+//se controla que las cuentas seleccionadas no sean la misma.
 		while(bandera2==0)
 		{
 			srand(time(NULL)*(int)getpid()*semilla);
@@ -82,40 +83,40 @@ int aCuenta2;
 				bandera2=1;
 			}
 		}
-		printf("los random son: %d y %d\n",aCuenta1,aCuenta2);
 		contador++;
-
+//se accede a los semaforos de las cuentas y se hace la transferencia.
 		while(bandera==0)
 		{
 			int intento1= sem_trywait(&semaforos[aCuenta1]);
 			int intento2= sem_trywait(&semaforos[aCuenta2]);
-
+//se verifica que ambos semaforos fueron tomados, si esto no ocurre se libera alguno de ellos (si lo tomó)
+//y se espera por otra oportunidad
 			if((intento1==-1)||(intento2==-1))
 			{
 				if(intento1==0)
 				{
 					sem_post(&semaforos[aCuenta1]);
 				}
-				if(intento1==0)
+				if(intento2==0)
 				{
 					sem_post(&semaforos[aCuenta2]);
 				}
 				semilla++;
-				sleep(0.1);
+				sleep(0.01);
 			}
 			else
 			{
+//se puede acceder a ambas cuentas y se procede a realizar la transferencia.
 				srand(time(NULL)*(int)getpid()*semilla);
 				int valorTrans =(int)rand()%(cuentas[aCuenta1]);
-				printf("el valor a transferir es: %d\n",valorTrans);
-				printf("el valor que tiene la cuenta1 es: %d\n",(int)cuentas[aCuenta1]);
 				cuentas[aCuenta1]=((int)cuentas[aCuenta1])-valorTrans;
 				cuentas[aCuenta2]=((int)cuentas[aCuenta2])+valorTrans;
 				bandera=1;
 				semilla++;
+//se liberan los semaforos
 				sem_post(&semaforos[aCuenta1]);
 				sem_post(&semaforos[aCuenta2]);
-				sleep(0.1);
+				sleep(0.01);
 			}
 			semilla++;
 		}
@@ -134,40 +135,54 @@ char *par3=argv[3];
 numCuentas=atoi(par3);
 char *par4=argv[4];
 valorInicial=atoi(par4);
-
-printf("tamaño :%d\n\n",(int)((sizeof(cuentas) / sizeof(int))));
+int balanceInicial=0;
 
 int i=0;
+//se inicializan las cuentas con el valor indicado por el usuario.
 for(i=0;i<numCuentas;i++)
 {
 	cuentas[i]=valorInicial;
+	balanceInicial=balanceInicial+valorInicial;
 }
-
+//se inicializan los semaros asociados a cada cuenta.
 for(i=0;i<numCuentas;i++)
 {
 	sem_init(&semaforos[i],0,1);
 }
 
 pthread_t hilos[numHilos];
-
+//se crean los hilos y se envian a la función transferencia
 for(i=0;i<numHilos;i++)
 {
 	pthread_create(&hilos[i],NULL,(void *)transferencia,NULL);
 }
-
+//se espera por cada uno de los hilos.
 for(i=0;i<numHilos;i++)
 {
 	pthread_join(hilos[i],NULL);
 }
-
+//se procede a comparar la sumatoria del saldo final de cada cuenta
 	int z=0;
-	int balance=0;
+	int balanceFinal=0;
 	for(z=0;z<numCuentas;z++)
 	{
-		printf("el valor de la cuenta %d es: %d\n\n",z,(int)cuentas[z]);
-		balance=balance+((int)cuentas[z]);
+		balanceFinal=balanceFinal+((int)cuentas[z]);
 	}
-	printf("el balance es : %d\n\n",balance);
+
+	if(balanceFinal==balanceInicial)
+	{
+		
+		printf("*************** PASÓ ****************\n\n");
+		printf("Sumatoria valores iniciales de las cuentas: %d\n\n",balanceInicial);
+		printf("Sumatoria valores finales de las cuentas: %d\n\n",balanceFinal);
+		
+	}
+	else
+	{
+		printf("************** NO PASÓ ***************");
+		printf("Sumatoria valores iniciales de las cuentas: %d\n\n",balanceInicial);
+		printf("Sumatoria valores finales de las cuentas: %d\n\n",balanceFinal);
+	}
 return 0;
 }
 

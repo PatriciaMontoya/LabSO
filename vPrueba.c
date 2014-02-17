@@ -26,41 +26,49 @@ int main(int argc, char*argv[])
 {
 	FILE *archivo;
 	char vector[180];
-	archivo=fopen(argv[1],"r");
+	char *nombreTxt[1];
+	char nombre[15];
+	nombreTxt[0]=argv[1];
+	archivo=fopen(argv[2],"r");
 	char *parametros[20];
 	char *valor;
+	sprintf(nombre,"./%s",nombreTxt[0]);
+	//printf("%s",nombre);
 	pid_t hijo;
 	int j=0;
 	int z=0;
+	int x=1;
 	int status;
-
+//se extrae cada vector de prueba del archivo de texto
 	while(fgets(vector,180,archivo)!=NULL)
 	{
+		printf("--------------vector de prueba número %d--------------------\n\n",x);
 		int i=0;
 		int repeticiones=0;
 	
 		valor = strtok(vector," ");
-		parametros[i]="./tranferencia.exe";
+		parametros[i]=argv[1];
 		parametros[i+1]=valor;
 		parametros[i+2]=strtok(NULL," ");
 		parametros[i+3]=strtok(NULL," ");
 		parametros[i+4]=strtok(NULL," ");
 		repeticiones = atoi(strtok(NULL," "));
 		parametros[i+5]=NULL;
-		
 		for(j=0;j<repeticiones;j++)
 		{
 			hijo=fork();
 			if(hijo==0)
 			{
-				execvp("./tranferencia.exe",parametros);//llamado al segundo programa
+				execvp(nombre,parametros);//llamado al segundo programa
 				exit(1);
 			}
 		}
+//se espera por cada proceso
 		for(z=0;z<repeticiones;z++)
 		{
 			wait(&status);
 		}
+		x++;
 		
 	}
 	return 0;
